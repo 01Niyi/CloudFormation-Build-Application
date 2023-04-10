@@ -1,0 +1,47 @@
+---
+Resources:
+  ServerSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow access on ports 80 and 22
+      GroupName: PizzyWebServer SG
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 73.163.162.63/32 #my ip address
+      Tags:
+        - Key: Name
+          Value: PizzyServer SG
+      VpcId: vpc-0ec17d06898228f78 #the default vpc in my aws management console
+
+  EC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: t2.micro
+      SubnetId: subnet-0d915ba66313361a2 #one of the default subnet in my aws account
+      SecurityGroupIds:
+        - !Ref ServerSG
+      KeyName: webkey_n #name of keypair that i created in aws management console
+      ImageId: ami-05fa00d4c63e32376 #ami from my aws management console 
+      Tags:
+        - Key: Name
+          Value: NeyorWebServer
+      UserData:
+        Fn::Base64:
+          !Sub |
+            #!/bin/bash -xe
+            sudo su
+            yum update -y
+            yum install -y httpd
+            cd /var/www/html
+            wget https://github.com/azeezsalu/techmax/archive/refs/heads/main.zip
+            unzip main.zip
+            cp -r techmax-main/* /var/www/html/
+            rm -rf techmax-main main.zip
+            systemctl enable httpd 
+            systemctl start httpd
